@@ -142,9 +142,9 @@ export function getClassAttendanceToday(
 }
 
 export function getDefaultStudents(): Student[] {
-  return SEED_STUDENTS
+  return SEED_STUDENTS.map((s, i) => ({ ...s, id: `s${i + 1}` }))
 }
 
 export function getDefaultSubjects(): Subject[] {
-  return SEED_SUBJECTS
+  return SEED_SUBJECTS.map((s, i) => ({ ...s, id: `sub${i + 1}`, teacherId: "" }))
 }

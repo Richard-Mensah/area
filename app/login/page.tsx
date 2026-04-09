@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { GraduationCap, Mail, ScanFace } from "lucide-react"
 import LoginForm from "@/components/features/auth/LoginForm"
 import FaceLogin from "@/components/features/auth/FaceLogin"
@@ -10,21 +9,7 @@ import { cn } from "@/lib/utils"
 type Tab = "email" | "face"
 
 export default function LoginPage() {
-  const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>("email")
-
-  useEffect(() => {
-    const raw = localStorage.getItem("attendance_app_auth")
-    if (!raw) return
-    try {
-      const session = JSON.parse(raw)
-      if (session?.expiresAt && new Date(session.expiresAt) > new Date()) {
-        router.replace("/dashboard")
-      }
-    } catch {
-      localStorage.removeItem("attendance_app_auth")
-    }
-  }, [router])
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: "email", label: "Email & Password", icon: Mail     },
@@ -74,7 +59,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-blue-200 text-xs mt-6">
-          EduTrack v1.0 · Attendance & Academic Analytics Platform
+          EduTrack v2.0 · Attendance & Academic Analytics Platform
         </p>
       </div>
     </div>

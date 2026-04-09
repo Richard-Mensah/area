@@ -1,121 +1,60 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import useSWR, { mutate as globalMutate } from "swr"
+import { useCallback } from "react"
 import type { AttendanceRecord, AttendanceStatus, Student, Subject } from "@/types"
-import { SEED_STUDENTS, SEED_SUBJECTS } from "@/constants"
-import { seedAttendanceHistory } from "@/lib/attendance"
 import { downloadCSV, formatDate } from "@/lib/utils"
 import { format } from "date-fns"
 
-const RECORDS_KEY = "attendance_app_records"
-const STUDENTS_KEY = "attendance_app_students"
-const SUBJECTS_KEY = "attendance_app_subjects"
+const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
-function getFromStorage<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback
-  try {
-    const item = localStorage.getItem(key)
-    return item ? JSON.parse(item) : fallback
-  } catch {
-    return fallback
-  }
-}
+export function useAttendance(filters?: { date?: string; subjectId?: string; class?: string }) {
+  const studentsSWR = useSWR<{ students: Student[] }>("/api/students", fetcher)
+  const subjectsSWR = useSWR<{ subjects: Subject[] }>("/api/subjects", fetcher)
 
-function saveToStorage<T>(key: string, value: T): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(key, JSON.stringify(value))
-}
+  // Build records URL from filters
+  const params = new URLSearchParams()
+  if (filters?.date) params.set("date", filters.date)
+  if (filters?.subjectId) params.set("subjectId", filters.subjectId)
+  if (filters?.class) params.set("class", filters.class)
+  const recordsKey = `/api/attendance${params.toString() ? `?${params.toString()}` : ""}`
 
-export function useAttendance() {
-  const [students, setStudents] = useState<Student[]>([])
-  const [subjects, setSubjects] = useState<Subject[]>([])
-  const [records, setRecords] = useState<AttendanceRecord[]>([])
-  const [initialized, setInitialized] = useState(false)
+  const recordsSWR = useSWR<{ records: AttendanceRecord[] }>(recordsKey, fetcher)
 
-  useEffect(() => {
-    const storedStudents = getFromStorage<Student[]>(STUDENTS_KEY, [])
-    const storedSubjects = getFromStorage<Subject[]>(SUBJECTS_KEY, [])
-    let storedRecords = getFromStorage<AttendanceRecord[]>(RECORDS_KEY, [])
+  const students = studentsSWR.data?.students ?? []
+  const subjects = subjectsSWR.data?.subjects ?? []
+  const records = recordsSWR.data?.records ?? []
+  const initialized = !studentsSWR.isLoading && !subjectsSWR.isLoading && !recordsSWR.isLoading
 
-    const finalStudents = storedStudents.length > 0 ? storedStudents : SEED_STUDENTS
-    const finalSubjects = storedSubjects.length > 0 ? storedSubjects : SEED_SUBJECTS
-
-    if (storedStudents.length === 0) saveToStorage(STUDENTS_KEY, SEED_STUDENTS)
-    if (storedSubjects.length === 0) saveToStorage(SUBJECTS_KEY, SEED_SUBJECTS)
-
-    if (storedRecords.length === 0) {
-      storedRecords = seedAttendanceHistory(finalStudents, finalSubjects, 60)
-      saveToStorage(RECORDS_KEY, storedRecords)
-    }
-
-    setStudents(finalStudents)
-    setSubjects(finalSubjects)
-    setRecords(storedRecords)
-    setInitialized(true)
-  }, [])
-
-  function markAttendance(
+  const markAttendance = useCallback(async (
     studentId: string,
     subjectId: string,
     date: string,
     status: AttendanceStatus,
     studentClass: string
-  ) {
-    setRecords((prev) => {
-      const existing = prev.findIndex(
-        (r) => r.studentId === studentId && r.subjectId === subjectId && r.date === date
-      )
-      let updated: AttendanceRecord[]
-      if (existing >= 0) {
-        updated = prev.map((r, i) => (i === existing ? { ...r, status } : r))
-      } else {
-        updated = [
-          ...prev,
-          {
-            id: `${studentId}-${subjectId}-${date}`,
-            studentId,
-            subjectId,
-            date,
-            status,
-            class: studentClass,
-          },
-        ]
-      }
-      saveToStorage(RECORDS_KEY, updated)
-      return updated
+  ) => {
+    await fetch("/api/attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentId, subjectId, date, status, class: studentClass }),
     })
-  }
+    globalMutate((key: string) => typeof key === "string" && key.startsWith("/api/attendance"))
+  }, [])
 
-  function bulkMark(
+  const bulkMark = useCallback(async (
     studentIds: string[],
     subjectId: string,
     date: string,
     status: AttendanceStatus,
     studentClass: string
-  ) {
-    setRecords((prev) => {
-      let updated = [...prev]
-      for (const studentId of studentIds) {
-        const existing = updated.findIndex(
-          (r) => r.studentId === studentId && r.subjectId === subjectId && r.date === date
-        )
-        if (existing >= 0) {
-          updated[existing] = { ...updated[existing], status }
-        } else {
-          updated.push({
-            id: `${studentId}-${subjectId}-${date}`,
-            studentId,
-            subjectId,
-            date,
-            status,
-            class: studentClass,
-          })
-        }
-      }
-      saveToStorage(RECORDS_KEY, updated)
-      return updated
+  ) => {
+    await fetch("/api/attendance/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentIds, subjectId, date, status, class: studentClass }),
     })
-  }
+    globalMutate((key: string) => typeof key === "string" && key.startsWith("/api/attendance"))
+  }, [])
 
   function getRecordsForDate(date: string, selectedClass?: string): AttendanceRecord[] {
     return records.filter(
@@ -153,5 +92,11 @@ export function useAttendance() {
     getRecordsForDate,
     getRecordsForStudent,
     exportToCSV,
+    // Expose mutate so pages can refresh data
+    refresh: () => {
+      studentsSWR.mutate()
+      subjectsSWR.mutate()
+      recordsSWR.mutate()
+    },
   }
 }

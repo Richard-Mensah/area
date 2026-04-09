@@ -11,7 +11,14 @@
       "Bash(cp /c/Users/joe/AppData/Local/Temp/area-scaffold/next-env.d.ts .)",
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(node -e \"const {execSync} = require\\('child_process'\\); try { const out = execSync\\('npx tsc --noEmit', {timeout: 60000, cwd: process.cwd\\(\\)}\\); console.log\\(out.toString\\(\\)\\); } catch\\(e\\) { console.log\\(e.stdout?.toString\\(\\)\\); console.log\\(e.stderr?.toString\\(\\)\\); }\")",
+      "Bash(node -e \"const {execSync} = require\\('child_process'\\); try { const out = execSync\\('npm run build 2>&1', {timeout: 120000, cwd: process.cwd\\(\\), shell: true}\\); console.log\\(out.toString\\(\\)\\); } catch\\(e\\) { console.log\\(e.stdout?.toString\\(\\).slice\\(-5000\\)\\); }\")",
+      "Bash(xargs grep:*)",
+      "Bash(node -e ':*)",
+      "Bash(node -e \"const swr = require\\('swr'\\); console.log\\(Object.keys\\(swr\\)\\);\")",
+      "Bash(awk 'NR>=294 && NR<=300' \"c:/Users/joe/Desktop/area/.next/dev/types/validator.ts\")",
+      "Bash(rm -rf .next)"
     ]
   }
 }

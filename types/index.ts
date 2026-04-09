@@ -6,12 +6,15 @@ export type RiskLevel = "At Risk" | "Needs Improvement" | "Good Standing" | "Exc
 
 export type GradeBand = "A" | "B" | "C" | "D" | "F"
 
+// ── Client-side shape (IDs are strings, returned from API) ──────────────────
+
 export type Student = {
   id: string
   name: string
   roll: string
   class: string
   email: string
+  userId?: string
   faceDescriptor?: number[]
 }
 
@@ -20,7 +23,8 @@ export type Subject = {
   name: string
   code: string
   class: string
-  teacher: string
+  teacher: string      // display name
+  teacherId: string    // User._id
 }
 
 export type AttendanceRecord = {
@@ -32,17 +36,27 @@ export type AttendanceRecord = {
   class: string
 }
 
+// ── Auth ────────────────────────────────────────────────────────────────────
+
+export type UserRole_ = UserRole  // alias
+
 export type AuthUser = {
   id: string
   name: string
   email: string
   role: UserRole
+  studentId?: string
 }
 
 export type AuthSession = {
   user: AuthUser
   expiresAt: string
 }
+
+// SessionUser is the JWT payload (same shape as AuthUser)
+export type SessionUser = AuthUser
+
+// ── Analytics ───────────────────────────────────────────────────────────────
 
 export type SubjectBreakdown = {
   subjectId: string
@@ -76,6 +90,8 @@ export type SubjectChartPoint = {
   rate: number
   risk: RiskLevel
 }
+
+// ── Legacy (kept for seed constants) ────────────────────────────────────────
 
 export type MockUser = {
   id: string

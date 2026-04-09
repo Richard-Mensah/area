@@ -1,61 +1,41 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { headers } from "next/headers"
+import { redirect } from "next/navigation"
 import Sidebar from "@/components/layout/Sidebar"
 import Navbar from "@/components/layout/Navbar"
-import type { AuthUser } from "@/types"
+import type { UserRole } from "@/types"
 
 const pageTitles: Record<string, string> = {
-  "/dashboard":              "Overview",
-  "/dashboard/attendance":   "Attendance",
-  "/dashboard/students":     "Students",
-  "/dashboard/predictions":  "Academic Predictions",
+  "/dashboard":                    "Overview",
+  "/dashboard/attendance":         "Attendance",
+  "/dashboard/students":           "Students",
+  "/dashboard/predictions":        "Academic Predictions",
+  "/dashboard/users":              "User Management",
+  "/dashboard/subjects":           "Subject Management",
+  "/dashboard/my-attendance":      "My Attendance",
+  "/dashboard/my-prediction":      "My Prediction",
+  "/dashboard/my-profile":         "My Profile",
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [loading, setLoading] = useState(true)
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const headerStore = await headers()
+  const role = headerStore.get("x-user-role") as UserRole | null
+  const name = headerStore.get("x-user-name")
 
-  useEffect(() => {
-    const raw = localStorage.getItem("attendance_app_auth")
-    if (!raw) {
-      router.replace("/login")
-      return
-    }
-    try {
-      const session = JSON.parse(raw)
-      if (!session?.expiresAt || new Date(session.expiresAt) <= new Date()) {
-        localStorage.removeItem("attendance_app_auth")
-        router.replace("/login")
-        return
-      }
-      setUser(session.user)
-    } catch {
-      localStorage.removeItem("attendance_app_auth")
-      router.replace("/login")
-    } finally {
-      setLoading(false)
-    }
-  }, [router])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-8 h-8 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
+  // Middleware protects this route, but double-check here
+  if (!role || !name) {
+    redirect("/login")
   }
 
+  // Derive page title from request URL header
+  const url = headerStore.get("x-invoke-path") ?? headerStore.get("next-url") ?? ""
   const title =
-    Object.entries(pageTitles).find(([path]) => pathname.startsWith(path) && (pathname === path || pathname.startsWith(path + "/")))?.[1]
-    ?? "EduTrack"
+    Object.entries(pageTitles)
+      .sort((a, b) => b[0].length - a[0].length)
+      .find(([path]) => url === path || url.startsWith(path + "/"))?.[1] ?? "EduTrack"
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar user={user} />
+      <Sidebar role={role} name={name} />
       <div className="flex-1 flex flex-col ml-60">
         <Navbar title={title} />
         <main className="flex-1 p-6">

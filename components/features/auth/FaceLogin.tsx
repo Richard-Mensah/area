@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation"
 import { Camera, Loader2, CheckCircle, XCircle, ScanFace } from "lucide-react"
 import Button from "@/components/ui/Button"
 import { useToast } from "@/components/ui/Toast"
-import { FACE_API_MODELS_URL, MOCK_USERS } from "@/constants"
-import type { AuthSession } from "@/types"
+import { FACE_API_MODELS_URL } from "@/constants"
 
 type Status = "idle" | "loading-models" | "ready" | "scanning" | "matched" | "no-match" | "no-face"
 
@@ -19,7 +18,6 @@ export default function FaceLogin() {
 
   useEffect(() => {
     return () => {
-      // Cleanup webcam on unmount
       if (videoRef.current?.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream
         stream.getTracks().forEach((t) => t.stop())
@@ -75,43 +73,26 @@ export default function FaceLogin() {
         return
       }
 
-      const liveDescriptor = detection.descriptor // already Float32Array
+      // Send descriptor to server for matching
+      const descriptor = Array.from(detection.descriptor as Float32Array)
+      const res = await fetch("/api/auth/face-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ descriptor }),
+      })
 
-      // Load stored face descriptors from localStorage
-      const raw = localStorage.getItem("attendance_app_face_descriptors")
-      const stored = (raw ? JSON.parse(raw) : {}) as Record<string, number[]>
-
-      let matchedStudentId: string | null = null
-      let bestDistance = Infinity
-
-      for (const [studentId, storedDesc] of Object.entries(stored)) {
-        const dist = faceapi.euclideanDistance(
-          liveDescriptor,
-          new Float32Array(storedDesc as number[])
-        )
-        if (dist < bestDistance) {
-          bestDistance = dist
-          matchedStudentId = studentId
-        }
-      }
-
-      const THRESHOLD = 0.5
-      if (matchedStudentId && bestDistance < THRESHOLD) {
-        // Match found — log in as teacher by default (demo: first mock user)
-        const mockUser = MOCK_USERS[0]
-        const session: AuthSession = {
-          user: { id: mockUser.id, name: mockUser.name, email: mockUser.email, role: mockUser.role },
-          expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
-        }
-        localStorage.setItem("attendance_app_auth", JSON.stringify(session))
-        setStatus("matched")
-        setStatusMsg(`Face matched! Welcome, ${mockUser.name}`)
-        toast(`Face recognised — Welcome, ${mockUser.name}!`, "success")
-        setTimeout(() => router.push("/dashboard"), 1500)
-      } else {
+      if (!res.ok) {
+        const { error } = await res.json() as { error: string }
         setStatus("no-match")
-        setStatusMsg("Face not recognised. Please enrol your face in the Students section first, or use email login.")
+        setStatusMsg(error ?? "Face not recognised.")
+        return
       }
+
+      const { user } = await res.json() as { user: { name: string } }
+      setStatus("matched")
+      setStatusMsg(`Face matched! Welcome, ${user.name}`)
+      toast(`Face recognised — Welcome, ${user.name}!`, "success")
+      setTimeout(() => router.push("/dashboard"), 1500)
     } catch (err) {
       console.error(err)
       setStatus("ready")
@@ -123,12 +104,7 @@ export default function FaceLogin() {
     <div className="flex flex-col items-center gap-5">
       {/* Video preview */}
       <div className="relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden flex items-center justify-center max-h-56">
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          muted
-          playsInline
-        />
+        <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
         {status === "idle" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white">
             <Camera className="w-10 h-10 opacity-50" />
@@ -155,12 +131,10 @@ export default function FaceLogin() {
         )}
       </div>
 
-      {/* Status message */}
       {statusMsg && (
         <p className="text-sm text-center text-gray-600 leading-snug">{statusMsg}</p>
       )}
 
-      {/* Action buttons */}
       <div className="flex gap-3 w-full">
         {status === "idle" && (
           <Button variant="primary" className="flex-1" onClick={startCamera}>
@@ -187,8 +161,8 @@ export default function FaceLogin() {
       </div>
 
       <p className="text-xs text-gray-400 text-center leading-relaxed">
-        Face login requires face model files in <code className="bg-gray-100 px-1 rounded">/public/models/</code>.
-        Admin can enrol faces from the Students page.
+        Face login requires your face to be enrolled from your profile page.
+        Enrol face via <code className="bg-gray-100 px-1 rounded">My Profile</code> or ask your admin.
       </p>
     </div>
   )
