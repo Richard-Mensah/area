@@ -75,19 +75,19 @@ export default function FaceLogin() {
         return
       }
 
-      const liveDescriptor = Array.from(detection.descriptor)
+      const liveDescriptor = detection.descriptor // already Float32Array
 
       // Load stored face descriptors from localStorage
       const raw = localStorage.getItem("attendance_app_face_descriptors")
-      const stored: Record<string, number[]> = raw ? JSON.parse(raw) : {}
+      const stored = (raw ? JSON.parse(raw) : {}) as Record<string, number[]>
 
       let matchedStudentId: string | null = null
       let bestDistance = Infinity
 
       for (const [studentId, storedDesc] of Object.entries(stored)) {
         const dist = faceapi.euclideanDistance(
-          new Float32Array(liveDescriptor),
-          new Float32Array(storedDesc)
+          liveDescriptor,
+          new Float32Array(storedDesc as number[])
         )
         if (dist < bestDistance) {
           bestDistance = dist
