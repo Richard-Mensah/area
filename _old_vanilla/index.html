@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Attendance</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <h1>Student Attendance System</h1>
+    <p class="subtitle">Mark and track daily attendance</p>
+  </header>
+
+  <main>
+    <section class="controls">
+      <div class="control-group">
+        <label for="classSelect">Class:</label>
+        <select id="classSelect">
+          <option value="10A">Class 10A</option>
+          <option value="10B">Class 10B</option>
+          <option value="11A">Class 11A</option>
+          <option value="11B">Class 11B</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="dateInput">Date:</label>
+        <input type="date" id="dateInput" />
+      </div>
+      <div class="control-group actions">
+        <button class="btn btn-outline" onclick="markAll('present')">Mark All Present</button>
+        <button class="btn btn-outline" onclick="markAll('absent')">Mark All Absent</button>
+      </div>
+    </section>
+
+    <section class="attendance-table-wrapper">
+      <table class="attendance-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Student Name</th>
+            <th>Roll No.</th>
+            <th class="status-col">Present</th>
+            <th class="status-col">Absent</th>
+            <th class="status-col">Late</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="studentTableBody">
+          <!-- Rows inserted by JS -->
+        </tbody>
+      </table>
+    </section>
+
+    <section class="summary" id="summary">
+      <div class="summary-card present-card">
+        <span class="count" id="presentCount">0</span>
+        <span class="label">Present</span>
+      </div>
+      <div class="summary-card absent-card">
+        <span class="count" id="absentCount">0</span>
+        <span class="label">Absent</span>
+      </div>
+      <div class="summary-card late-card">
+        <span class="count" id="lateCount">0</span>
+        <span class="label">Late</span>
+      </div>
+      <div class="summary-card total-card">
+        <span class="count" id="totalCount">0</span>
+        <span class="label">Total</span>
+      </div>
+    </section>
+
+    <div class="save-row">
+      <button class="btn btn-primary" onclick="saveAttendance()">Save Attendance</button>
+      <button class="btn btn-secondary" onclick="printAttendance()">Print / Export</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

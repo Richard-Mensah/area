@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir=no --import-alias=\"@/*\" --yes)",
+      "Bash(mkdir -p /tmp/area-scaffold)",
+      "Read(//tmp/**)",
+      "Bash(cp /c/Users/joe/AppData/Local/Temp/area-scaffold/package.json .)",
+      "Bash(cp /c/Users/joe/AppData/Local/Temp/area-scaffold/package-lock.json .)",
+      "Bash(cp /c/Users/joe/AppData/Local/Temp/area-scaffold/tsconfig.json .)",
+      "Bash(cp /c/Users/joe/AppData/Local/Temp/area-scaffold/next.config.ts .)",
+      "Bash(cp /c/Users/joe/AppData/Local/Temp/area-scaffold/next-env.d.ts .)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
